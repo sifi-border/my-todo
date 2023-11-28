@@ -1,7 +1,7 @@
-use axum::{http::StatusCode, response::IntoResponse, routing::get, routing::post, Json, Router};
+use anyhow::{Context, Ok};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -12,7 +12,7 @@ enum RepositoryError {
 
 pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'static {
     fn create(&self, payload: CreateTodo) -> Todo;
-    fn find(&self, id: i32) -> Todo;
+    fn find(&self, id: i32) -> Option<Todo>;
     fn all(&self) -> Vec<Todo>;
     fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<Todo>;
     fn delete(&self, id: i32) -> anyhow::Result<()>;
@@ -59,26 +59,104 @@ impl TodoRepositoryForMemory {
             store: Arc::default(),
         }
     }
+
+    fn write_score_ref(&self) -> RwLockWriteGuard<TodoDatas> {
+        self.store.write().unwrap()
+    }
+
+    fn read_score_ref(&self) -> RwLockReadGuard<TodoDatas> {
+        self.store.read().unwrap()
+    }
 }
 
 impl TodoRepository for TodoRepositoryForMemory {
     fn create(&self, payload: CreateTodo) -> Todo {
-        todo!()
+        let mut store = self.write_score_ref();
+        let id = store.len() as i32 + 1;
+        let todo = Todo::new(id, payload.text.clone());
+        store.insert(id, todo.clone());
+        todo
     }
 
-    fn find(&self, id: i32) -> Todo {
-        todo!()
+    fn find(&self, id: i32) -> Option<Todo> {
+        let store = self.read_score_ref();
+        // TODO: Use Box::new
+        store.get(&id).map(|todo| todo.clone())
     }
 
     fn all(&self) -> Vec<Todo> {
-        todo!()
+        let store = self.read_score_ref();
+        Vec::from_iter(store.values().map(|todo| todo.clone()))
     }
 
     fn update(&self, id: i32, payload: UpdateTodo) -> anyhow::Result<Todo> {
-        todo!()
+        let mut store = self.write_score_ref();
+        let todo = store.get(&id).context(RepositoryError::NotFound(id))?;
+        let text = payload.text.unwrap_or(todo.text.clone());
+        let completed = payload.completed.unwrap_or(todo.completed);
+        let todo = Todo {
+            id,
+            text,
+            completed,
+        };
+        store.insert(id, todo.clone());
+        Ok(todo)
     }
 
     fn delete(&self, id: i32) -> anyhow::Result<()> {
-        todo!()
+        let mut store = self.write_score_ref();
+        store.remove(&id).ok_or(RepositoryError::NotFound(id))?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use serde::de::Expected;
+
+    use super::*;
+
+    #[test]
+    fn todo_crud_scenario() {
+        let text = "todo text".to_string();
+        let id = 1;
+        let expected = Todo::new(id, text.clone());
+
+        // create
+        let repository = TodoRepositoryForMemory::new();
+        let todo = repository.create(CreateTodo { text: text.clone() });
+        assert_eq!(todo, expected);
+
+        // find
+        let todo = repository.find(todo.id).unwrap();
+        assert_eq!(todo, expected);
+
+        // all
+        let todos = repository.all();
+        assert_eq!(todos, vec![expected.clone()]);
+
+        // update
+        let updated_text = "updated todo text".to_string();
+        let todo = repository
+            .update(
+                id,
+                UpdateTodo {
+                    text: Some(updated_text.clone()),
+                    completed: Some(true),
+                },
+            )
+            .expect("failed to update");
+        assert_eq!(
+            todo,
+            Todo {
+                id,
+                text: updated_text.clone(),
+                completed: true,
+            }
+        );
+
+        // delete
+        let result = repository.delete(id);
+        assert!(result.is_ok());
     }
 }
