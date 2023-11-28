@@ -1,14 +1,13 @@
+mod handlers;
 mod repositories;
 
-use crate::repositories::{CreateTodo, Todo, TodoRepository, TodoRepositoryForMemory};
+use crate::handlers::create_todo;
+use crate::repositories::{TodoRepository, TodoRepositoryForMemory};
 use axum::extract::Extension;
-use axum::{http::StatusCode, response::IntoResponse, routing::get, routing::post, Json, Router};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use axum::{routing::get, routing::post, Router};
 use std::env;
 use std::net::SocketAddr;
-use std::sync::{Arc, RwLock};
-use thiserror::Error;
+use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
@@ -33,15 +32,6 @@ fn create_app<T: TodoRepository>(repository: T) -> Router {
         .route("/", get(root))
         .route("/todos", post(create_todo::<T>))
         .layer(Extension(Arc::new(repository)))
-}
-
-pub async fn create_todo<T: TodoRepository>(
-    Json(payload): Json<CreateTodo>,
-    Extension(repository): Extension<Arc<T>>,
-) -> impl IntoResponse {
-    let todo = repository.create(payload);
-
-    (StatusCode::CREATED, Json(todo))
 }
 
 async fn root() -> &'static str {
