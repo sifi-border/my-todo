@@ -52,7 +52,6 @@ mod tests {
     use axum::{body::Body, http::Request, response::Response};
     use hyper::{header, Method, StatusCode};
     use tower::ServiceExt;
-    use tracing::debug;
 
     fn build_todo_req_with_json(path: &str, method: Method, json_body: String) -> Request<Body> {
         Request::builder()
