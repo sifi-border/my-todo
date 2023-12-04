@@ -25,3 +25,7 @@ sqlx = { version = "0.5.11", features = [
     "postgres",
 ] }
 dotenv = "0.15.0"
+
+[features]
+default = ["database-test"]
+database-test = []
