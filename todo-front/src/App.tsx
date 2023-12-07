@@ -9,7 +9,7 @@ const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const createId = () => todos.length + 1;
 
-  const onSubmit = (payload: NewTodoPayload) => {
+  const onSubmit = async (payload: NewTodoPayload) => {
     if (!payload.text) return;
     setTodos((prev) => [
       {
@@ -25,9 +25,9 @@ const TodoApp: FC = () => {
     <>
       <Box
         sx={{
-          backgroundColor: "black",
+          backgroundColor: "white",
           borderBottom: "1px solid gray",
-          // display: "flex",
+          display: "flex",
           alignItems: "center",
           position: "fixed",
           top: 0,
@@ -58,10 +58,10 @@ const TodoApp: FC = () => {
 const theme = createTheme({
   typography: {
     h1: {
-      fontSize: "30",
+      fontSize: 30,
     },
     h2: {
-      fontSize: "20",
+      fontSize: 20,
     },
   },
 });
