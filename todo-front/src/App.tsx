@@ -1,25 +1,20 @@
 import "modern-css-reset";
-import { useState, FC } from "react";
+import { useState, useEffect, FC } from "react";
 import { NewTodoPayload, Todo } from "./types/todo";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Box, Stack, Typography } from "@mui/material";
 import TodoForm from "./components/TodoForm";
 import TodoList from "./components/TodoList";
+import { addTodoItem, getTodoItems } from "./lib/api/todo";
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
-  const createId = () => todos.length + 1;
 
   const onSubmit = async (payload: NewTodoPayload) => {
     if (!payload.text) return;
-    setTodos((prev) => [
-      {
-        id: createId(),
-        text: payload.text,
-        completed: false,
-      },
-      ...prev,
-    ]);
+    await addTodoItem(payload);
+    const newTodos = await getTodoItems();
+    setTodos(newTodos);
   };
 
   const onUpdate = (updateTodo: Todo) => {
@@ -35,6 +30,13 @@ const TodoApp: FC = () => {
       })
     );
   };
+
+  useEffect(() => {
+    (async () => {
+      const todos = await getTodoItems();
+      setTodos(todos);
+    })();
+  }, []);
 
   return (
     <>
