@@ -5,7 +5,12 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Box, Stack, Typography } from "@mui/material";
 import TodoForm from "./components/TodoForm";
 import TodoList from "./components/TodoList";
-import { addTodoItem, getTodoItems, updateTodoItem } from "./lib/api/todo";
+import {
+  addTodoItem,
+  getTodoItems,
+  updateTodoItem,
+  deleteTodoItem,
+} from "./lib/api/todo";
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -19,6 +24,12 @@ const TodoApp: FC = () => {
 
   const onUpdate = async (updateTodo: Todo) => {
     await updateTodoItem(updateTodo);
+    const newTodos = await getTodoItems();
+    setTodos(newTodos);
+  };
+
+  const onDelete = async (id: number) => {
+    await deleteTodoItem(id);
     const newTodos = await getTodoItems();
     setTodos(newTodos);
   };
@@ -59,7 +70,7 @@ const TodoApp: FC = () => {
         <Box maxWidth={700} width="100%">
           <Stack spacing={5}>
             <TodoForm onSubmit={onSubmit} />
-            <TodoList todos={todos} onUpdate={onUpdate} />
+            <TodoList todos={todos} onUpdate={onUpdate} onDelete={onDelete} />
           </Stack>
         </Box>
       </Box>
