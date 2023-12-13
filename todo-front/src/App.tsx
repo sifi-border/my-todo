@@ -5,7 +5,7 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Box, Stack, Typography } from "@mui/material";
 import TodoForm from "./components/TodoForm";
 import TodoList from "./components/TodoList";
-import { addTodoItem, getTodoItems } from "./lib/api/todo";
+import { addTodoItem, getTodoItems, updateTodoItem } from "./lib/api/todo";
 
 const TodoApp: FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -17,18 +17,10 @@ const TodoApp: FC = () => {
     setTodos(newTodos);
   };
 
-  const onUpdate = (updateTodo: Todo) => {
-    setTodos(
-      todos.map((todo) => {
-        if (todo.id === updateTodo.id) {
-          return {
-            ...todo,
-            ...updateTodo,
-          };
-        }
-        return todo;
-      })
-    );
+  const onUpdate = async (updateTodo: Todo) => {
+    await updateTodoItem(updateTodo);
+    const newTodos = await getTodoItems();
+    setTodos(newTodos);
   };
 
   useEffect(() => {
