@@ -1,11 +1,11 @@
 mod handlers;
 mod repositories;
 
-use crate::repositories::{TodoRepository, TodoRepositoryForDb};
+use crate::repositories::todo::{TodoRepository, TodoRepositoryForDb};
 use axum::extract::Extension;
 use axum::{routing::get, routing::post, Router};
 use dotenv::dotenv;
-use handlers::{all_todo, create_todo, delete_todo, find_todo, update_todo};
+use handlers::todo::{all_todo, create_todo, delete_todo, find_todo, update_todo};
 use hyper::header::CONTENT_TYPE;
 use std::env;
 use std::net::SocketAddr;
@@ -63,7 +63,7 @@ async fn root() -> &'static str {
 
 #[cfg(test)]
 mod tests {
-    use crate::repositories::{test_utils::TodoRepositoryForMemory, CreateTodo, Todo};
+    use crate::repositories::todo::{test_utils::TodoRepositoryForMemory, CreateTodo, Todo};
 
     use super::*;
     use axum::{body::Body, http::Request, response::Response};
