@@ -7,6 +7,7 @@ use hyper::StatusCode;
 use serde::de::DeserializeOwned;
 use validator::Validate;
 
+pub mod label;
 pub mod todo;
 
 #[derive(Debug)]
