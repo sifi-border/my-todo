@@ -18,14 +18,6 @@ pub struct Label {
     pub name: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Validate)]
-pub struct UpdateLabel {
-    id: i32,
-    #[validate(length(min = 1, message = "Can not be empty"))]
-    #[validate(length(max = 20, message = "Name is too long"))]
-    name: String,
-}
-
 #[derive(Debug, Clone)]
 pub struct LabelRepositoryForDb {
     pool: PgPool,
