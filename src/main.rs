@@ -116,6 +116,14 @@ mod tests {
         todo
     }
 
+    async fn res_to_label(res: Response) -> Label {
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+        let label = serde_json::from_str(&body)
+            .expect(&format!("failed to convert Label instance. body: {}", body));
+        label
+    }
+
     #[tokio::test]
     async fn should_return_hello_world() {
         let todo_repository = TodoRepositoryForMemory::new();
@@ -226,7 +234,63 @@ mod tests {
             .create(CreateTodo::new("some todo text".to_string()))
             .await
             .expect("failed to create todo");
-        let req = build_todo_req_with_empty("/todos/1", Method::DELETE);
+        let req = build_req_with_empty("/todos/1", Method::DELETE);
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::NO_CONTENT);
+    }
+
+    #[tokio::test]
+    async fn should_create_label() {
+        let todo_repository = TodoRepositoryForMemory::new();
+        let label_repository = LabelRepositoryForMemory::new();
+        let req = build_req_with_json(
+            "/labels",
+            Method::POST,
+            r#"{"name":"some label text"}"#.to_string(),
+        );
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
+        assert_eq!(res.status(), StatusCode::CREATED);
+
+        let label = res_to_label(res).await;
+        assert_eq!(label.name, "some label text");
+    }
+
+    #[tokio::test]
+    async fn should_get_all_labels() {
+        let todo_repository = TodoRepositoryForMemory::new();
+        let label_repository = LabelRepositoryForMemory::new();
+        label_repository
+            .create("some label text".to_string())
+            .await
+            .expect("failed to create label");
+        let req = build_req_with_empty("/labels", Method::GET);
+        let res = create_app(todo_repository, label_repository)
+            .oneshot(req)
+            .await
+            .unwrap();
+        let bytes = hyper::body::to_bytes(res.into_body()).await.unwrap();
+        let body = String::from_utf8(bytes.to_vec()).unwrap();
+        let label_vec: Vec<Label> = serde_json::from_str(&body)
+            .expect(&format!("failed to convert Label instance. body: {}", body));
+        assert_eq!(label_vec.len(), 1);
+        assert_eq!(label_vec[0].name, "some label text");
+    }
+
+    #[tokio::test]
+    async fn should_delete_label() {
+        let todo_repository = TodoRepositoryForMemory::new();
+        let label_repository = LabelRepositoryForMemory::new();
+        label_repository
+            .create("some label text".to_string())
+            .await
+            .expect("failed to create label");
+        let req = build_req_with_empty("/labels/1", Method::DELETE);
         let res = create_app(todo_repository, label_repository)
             .oneshot(req)
             .await
