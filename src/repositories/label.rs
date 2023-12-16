@@ -134,3 +134,97 @@ mod test {
         assert_eq!(labels.len(), 0);
     }
 }
+
+#[cfg(test)]
+pub mod test_utils {
+    use anyhow::Ok;
+
+    use super::*;
+    use std::collections::HashMap;
+    use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+
+    impl Label {
+        pub fn new(id: i32, name: String) -> Self {
+            Self { id, name }
+        }
+    }
+
+    type LabelData = HashMap<i32, Label>;
+
+    #[derive(Debug, Clone)]
+    pub struct LabelRepositoryForMemory {
+        data: Arc<RwLock<LabelData>>,
+    }
+
+    impl LabelRepositoryForMemory {
+        pub fn new() -> Self {
+            Self {
+                data: Arc::default(),
+            }
+        }
+
+        fn write_store_ref(&self) -> RwLockWriteGuard<LabelData> {
+            self.data.write().unwrap()
+        }
+
+        fn read_store_ref(&self) -> RwLockReadGuard<LabelData> {
+            self.data.read().unwrap()
+        }
+    }
+
+    #[async_trait]
+    impl LabelRepository for LabelRepositoryForMemory {
+        async fn create(&self, name: String) -> anyhow::Result<Label> {
+            let mut store = self.write_store_ref();
+            let id = store.len() as i32 + 1;
+            let label = Label::new(id, name.clone());
+            store.insert(id, label.clone());
+            Ok(label)
+        }
+
+        async fn all(&self) -> anyhow::Result<Vec<Label>> {
+            let store = self.read_store_ref();
+            let labels = store.values().cloned().collect();
+            Ok(labels)
+        }
+
+        async fn delete(&self, id: i32) -> anyhow::Result<()> {
+            let mut store = self.write_store_ref();
+            store.remove(&id);
+            Ok(())
+        }
+    }
+
+    mod test {
+        use super::*;
+
+        #[tokio::test]
+        async fn crud_scenario() {
+            let repository = LabelRepositoryForMemory::new();
+            let label_text = "test_label".to_string();
+
+            // create
+            let label = repository
+                .create(label_text.to_string())
+                .await
+                .expect(&format!("[create] failed to create label"));
+            assert_eq!(label.name, label_text);
+
+            // all
+            let labels = repository
+                .all()
+                .await
+                .expect("[all] failed to get all labels");
+            assert_eq!(labels.len(), 1);
+            assert_eq!(labels[0].name, label_text);
+
+            // delete
+            repository
+                .delete(label.id)
+                .await
+                .expect("[delete] failed to delete label");
+            let labels = repository.all().await.unwrap();
+            assert_eq!(labels.len(), 0);
+        }
+    }
+}
