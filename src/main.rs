@@ -91,7 +91,7 @@ mod tests {
     use hyper::{header, Method, StatusCode};
     use tower::ServiceExt;
 
-    fn build_todo_req_with_json(path: &str, method: Method, json_body: String) -> Request<Body> {
+    fn build_req_with_json(path: &str, method: Method, json_body: String) -> Request<Body> {
         Request::builder()
             .uri(path)
             .method(method)
@@ -100,7 +100,7 @@ mod tests {
             .unwrap()
     }
 
-    fn build_todo_req_with_empty(path: &str, method: Method) -> Request<Body> {
+    fn build_req_with_empty(path: &str, method: Method) -> Request<Body> {
         Request::builder()
             .uri(path)
             .method(method)
@@ -139,7 +139,7 @@ mod tests {
 
         let todo_repository = TodoRepositoryForMemory::new();
         let label_repository = LabelRepositoryForMemory::new();
-        let req = build_todo_req_with_json(
+        let req = build_req_with_json(
             "/todos",
             Method::POST,
             r#"{"text":"some todo text"}"#.to_string(),
@@ -148,6 +148,8 @@ mod tests {
             .oneshot(req)
             .await
             .unwrap();
+        assert_eq!(res.status(), StatusCode::CREATED);
+
         let todo = res_to_todo(res).await;
         assert_eq!(todo, expected);
     }
@@ -162,7 +164,7 @@ mod tests {
             .create(CreateTodo::new("some todo text".to_string()))
             .await
             .expect("failed to create todo");
-        let req = build_todo_req_with_empty("/todos/1", Method::GET);
+        let req = build_req_with_empty("/todos/1", Method::GET);
         let res = create_app(todo_repository, label_repository)
             .oneshot(req)
             .await
@@ -181,7 +183,7 @@ mod tests {
             .create(CreateTodo::new("some todo text".to_string()))
             .await
             .expect("failed to create todo");
-        let req = build_todo_req_with_empty("/todos", Method::GET);
+        let req = build_req_with_empty("/todos", Method::GET);
         let res = create_app(todo_repository, label_repository)
             .oneshot(req)
             .await
@@ -203,7 +205,7 @@ mod tests {
             .create(CreateTodo::new("some todo text".to_string()))
             .await
             .expect("failed to create todo");
-        let req = build_todo_req_with_json(
+        let req = build_req_with_json(
             "/todos/1",
             Method::PATCH,
             r#"{"text":"updated todo text"}"#.to_string(),
