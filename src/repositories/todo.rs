@@ -15,7 +15,7 @@ pub trait TodoRepository: Clone + std::marker::Send + std::marker::Sync + 'stati
     async fn delete(&self, id: i32) -> anyhow::Result<()>;
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, FromRow)]
+#[derive(Debug, Clone, PartialEq, Eq, FromRow)]
 pub struct TodoWithLabelFromRow {
     id: i32,
     text: String,
@@ -106,9 +106,9 @@ impl TodoRepository for TodoRepositoryForDb {
         let tx = self.pool.begin().await?;
         let row = sqlx::query_as::<_, TodoFromRow>(
             r#"
-            insert into todos (text, compoeted)
+            insert into todos (text, completed)
             values ($1, false)
-            retruning *;
+            returning *;
             "#,
         )
         .bind(payload.text.clone())
@@ -190,7 +190,7 @@ impl TodoRepository for TodoRepositoryForDb {
         .await?;
 
         // update labels
-        if let Some(labels) = payload.label_ids {
+        if let Some(label_ids) = payload.label_ids {
             sqlx::query(
                 r#"
                 delete from todo_labels where todo_id=$1
@@ -208,7 +208,7 @@ impl TodoRepository for TodoRepositoryForDb {
                 "#,
             )
             .bind(id)
-            .bind(labels)
+            .bind(label_ids)
             .execute(&self.pool)
             .await?;
         };
@@ -315,8 +315,8 @@ mod test {
     #[cfg(feature = "database-test")]
     #[tokio::test]
     async fn crud_scenario() {
-        use std::vec;
         use dotenv::dotenv;
+        use std::vec;
 
         dotenv().ok();
         let database_url = std::env::var("DATABASE_URL").expect("undefined [DATABASE_URL]");
@@ -340,7 +340,7 @@ mod test {
             let label = sqlx::query_as::<_, Label>(
                 r#"
                 insert into labels ( name )
-e               values ( $1 )
+                values ( $1 )
                 returning *
                 "#,
             )
