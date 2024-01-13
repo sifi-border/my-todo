@@ -182,8 +182,6 @@ impl TodoRepository for TodoRepositoryForDb {
 #[cfg(test)]
 mod test {
     use super::*;
-    use dotenv::dotenv;
-    use sqlx::PgPool;
 
     #[test]
     fn fold_entities_test() {

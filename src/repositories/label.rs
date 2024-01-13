@@ -1,7 +1,6 @@
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
-use validator::Validate;
 
 use super::RepositoryError;
 
