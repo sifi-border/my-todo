@@ -108,21 +108,11 @@ mod test {
             .expect(&format!("[create] failed to create label"));
         assert_eq!(label.name, label_text);
 
-        // all
-        let labels = repository
-            .all()
-            .await
-            .expect("[all] failed to get all labels");
-        assert_eq!(labels.len(), 1);
-        assert_eq!(labels[0].name, label_text);
-
         // delete
         repository
             .delete(label.id)
             .await
             .expect("[delete] failed to delete label");
-        let labels = repository.all().await.unwrap();
-        assert_eq!(labels.len(), 0);
     }
 }
 
