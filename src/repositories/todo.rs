@@ -2,7 +2,7 @@ use super::{label::Label, RepositoryError};
 use anyhow::Ok;
 use axum::async_trait;
 use serde::{Deserialize, Serialize};
-use sqlx::{prelude::FromRow, PgPool};
+use sqlx::{FromRow, PgPool};
 use validator::Validate;
 
 #[async_trait]
@@ -177,7 +177,7 @@ impl TodoRepository for TodoRepositoryForDb {
 
         // update todo
         let old_todo = self.find(id).await?;
-        sqlx::query_as::<_, TodoWithLabelFromRow>(
+        sqlx::query(
             r#"
             UPDATE todos SET text = $1, completed = $2 WHERE id = $3
             RETURNING *
@@ -513,10 +513,10 @@ pub mod test_utils {
             let todo = store.get(&id).context(RepositoryError::NotFound(id))?;
             let text = payload.text.unwrap_or(todo.text.clone());
             let completed = payload.completed.unwrap_or(todo.completed);
-            let labels = payload
-                .label_ids
-                .map(|label_ids| self.resolve_labels(label_ids))
-                .unwrap_or(todo.labels.clone());
+            let labels = match payload.label_ids {
+                Some(v) => self.resolve_labels(v),
+                None => todo.labels.clone(),
+            };
             let todo = TodoEntity {
                 id,
                 text,
