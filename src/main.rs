@@ -124,9 +124,18 @@ mod tests {
         label
     }
 
+    fn label_fixture() -> (Vec<Label>, Vec<i32>) {
+        let label_1 = Label::new(1, "label_1".to_string());
+        let label_2 = Label::new(2, "label_2".to_string());
+        let labels = vec![label_1, label_2];
+        let label_ids = labels.iter().map(|label| label.id).collect();
+        (labels, label_ids)
+    }
+
     #[tokio::test]
     async fn should_return_hello_world() {
-        let todo_repository = TodoRepositoryForMemory::new();
+        let (labels, _) = label_fixture();
+        let todo_repository = TodoRepositoryForMemory::new(labels);
         let label_repository = LabelRepositoryForMemory::new();
         let req = Request::builder()
             .uri("/")
@@ -143,14 +152,15 @@ mod tests {
 
     #[tokio::test]
     async fn should_created_todo() {
-        let expected = TodoEntity::new(1, "some todo text".to_string());
+        let (labels, _) = label_fixture();
+        let expected = TodoEntity::new(1, "some todo text".to_string(), labels.clone());
 
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(labels.clone());
         let label_repository = LabelRepositoryForMemory::new();
         let req = build_req_with_json(
             "/todos",
             Method::POST,
-            r#"{"text":"some todo text"}"#.to_string(),
+            r#"{"text":"some todo text", "label_ids":[1,2]}"#.to_string(),
         );
         let res = create_app(todo_repository, label_repository)
             .oneshot(req)
@@ -164,12 +174,13 @@ mod tests {
 
     #[tokio::test]
     async fn should_find_todo() {
-        let expected = TodoEntity::new(1, "some todo text".to_string());
+        let (labels, label_ids) = label_fixture();
+        let expected = TodoEntity::new(1, "some todo text".to_string(), labels.clone());
 
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(labels.clone());
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("some todo text".to_string()))
+            .create(CreateTodo::new("some todo text".to_string(), label_ids))
             .await
             .expect("failed to create todo");
         let req = build_req_with_empty("/todos/1", Method::GET);
@@ -183,12 +194,14 @@ mod tests {
 
     #[tokio::test]
     async fn should_get_all_todos() {
-        let expected = TodoEntity::new(1, "some todo text".to_string());
+        let (labels, label_ids) = label_fixture();
 
-        let todo_repository = TodoRepositoryForMemory::new();
+        let expected = TodoEntity::new(1, "some todo text".to_string(), labels.clone());
+
+        let todo_repository = TodoRepositoryForMemory::new(labels.clone());
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("some todo text".to_string()))
+            .create(CreateTodo::new("some todo text".to_string(), label_ids))
             .await
             .expect("failed to create todo");
         let req = build_req_with_empty("/todos", Method::GET);
@@ -205,12 +218,13 @@ mod tests {
 
     #[tokio::test]
     async fn should_update_todo() {
-        let expected = TodoEntity::new(1, "updated todo text".to_string());
+        let (labels, label_ids) = label_fixture();
+        let expected = TodoEntity::new(1, "updated todo text".to_string(), labels.clone());
 
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(labels.clone());
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("some todo text".to_string()))
+            .create(CreateTodo::new("some todo text".to_string(), label_ids))
             .await
             .expect("failed to create todo");
         let req = build_req_with_json(
@@ -228,10 +242,11 @@ mod tests {
 
     #[tokio::test]
     async fn should_delete_todo() {
-        let todo_repository = TodoRepositoryForMemory::new();
+        let (labels, label_ids) = label_fixture();
+        let todo_repository = TodoRepositoryForMemory::new(labels);
         let label_repository = LabelRepositoryForMemory::new();
         todo_repository
-            .create(CreateTodo::new("some todo text".to_string()))
+            .create(CreateTodo::new("some todo text".to_string(), label_ids))
             .await
             .expect("failed to create todo");
         let req = build_req_with_empty("/todos/1", Method::DELETE);
@@ -244,7 +259,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_create_label() {
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         let req = build_req_with_json(
             "/labels",
@@ -263,7 +278,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_get_all_labels() {
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         label_repository
             .create("some label text".to_string())
@@ -284,7 +299,7 @@ mod tests {
 
     #[tokio::test]
     async fn should_delete_label() {
-        let todo_repository = TodoRepositoryForMemory::new();
+        let todo_repository = TodoRepositoryForMemory::new(vec![]);
         let label_repository = LabelRepositoryForMemory::new();
         label_repository
             .create("some label text".to_string())
