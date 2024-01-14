@@ -27,7 +27,7 @@ const TodoForm: FC<Props> = ({ onSubmit, labels }) => {
 
   const addTodoHandler = async () => {
     if (!todoText) return;
-    onSubmit({ text: todoText, labels: labelList.map((label) => label.id) });
+    onSubmit({ text: todoText, label_ids: labelList.map((label) => label.id) });
     setTodoText("");
   };
 

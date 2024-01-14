@@ -37,7 +37,7 @@ const TodoItem: FC<Props> = ({ todo, onUpdate, onDelete, labels }) => {
     onUpdate({
       ...todo,
       completed: !todo.completed,
-      labels: todo.labels.map((label) => label.id),
+      label_ids: todo.labels.map((label) => label.id),
     });
   };
 
@@ -46,7 +46,7 @@ const TodoItem: FC<Props> = ({ todo, onUpdate, onDelete, labels }) => {
       id: todo.id,
       text: editText,
       completed: todo.completed,
-      labels: labelList.map((label) => label.id),
+      label_ids: labelList.map((label) => label.id),
     });
     setIsEditing(false);
   };
