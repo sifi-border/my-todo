@@ -1,6 +1,12 @@
 import "modern-css-reset";
 import { useState, useEffect, FC } from "react";
-import { Label, NewTodoPayload, Todo, NewLabelPayload } from "./types/todo";
+import {
+  Label,
+  NewTodoPayload,
+  Todo,
+  NewLabelPayload,
+  UpdateTodoPayload,
+} from "./types/todo";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { Box, Stack, Typography } from "@mui/material";
 import TodoForm from "./components/TodoForm";
@@ -26,7 +32,7 @@ const TodoApp: FC = () => {
     setTodos(newTodos);
   };
 
-  const onUpdate = async (updateTodo: Todo) => {
+  const onUpdate = async (updateTodo: UpdateTodoPayload) => {
     await updateTodoItem(updateTodo);
     const newTodos = await getTodoItems();
     setTodos(newTodos);
@@ -116,11 +122,12 @@ const TodoApp: FC = () => {
       >
         <Box maxWidth={700} width="100%">
           <Stack spacing={5}>
-            <TodoForm onSubmit={onSubmit} />
+            <TodoForm onSubmit={onSubmit} labels={labels} />
             <TodoList
               todos={displayTodos}
               onUpdate={onUpdate}
               onDelete={onDelete}
+              labels={labels}
             />
           </Stack>
         </Box>

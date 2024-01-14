@@ -7,10 +7,14 @@ export type Todo = {
 
 export type NewTodoPayload = {
   text: string;
+  labels: number[];
 };
 
-export type UpdateTodoPayload = Partial<Omit<Todo, "id">> & {
+export type UpdateTodoPayload = {
   id: number;
+  text?: string;
+  completed?: boolean;
+  labels?: number[];
 };
 
 export type Label = {
